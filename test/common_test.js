@@ -112,9 +112,7 @@ function testOrm(schema) {
 
     var Post, User, Passport, Log, Dog;
 
-    it('should define class', function (test) {
-
-        User = schema.define('User', {
+    User = schema.define('User', {
             name:      { type: String, index: true },
             email:     { type: String, index: true },
             bio:          Text,
@@ -124,71 +122,73 @@ function testOrm(schema) {
             passwd:    { type: String, index: true }
         });
 
-        Dog = schema.define('Dog', {
-            name        : { type: String, limit: 64, allowNull: false }
-        });
+    Dog = schema.define('Dog', {
+        name        : { type: String, limit: 64, allowNull: false }
+    });
 
-        Log = schema.define('Log', {
-            ownerId     : { type: Number, allowNull: true },
-            name         : { type: String, limit: 64, allowNull: false }
-        });
+    Log = schema.define('Log', {
+        ownerId     : { type: Number, allowNull: true },
+        name         : { type: String, limit: 64, allowNull: false }
+    });
 
-        Log.belongsTo(Dog,  {as: 'owner',  foreignKey: 'ownerId'});
+    Log.belongsTo(Dog,  {as: 'owner',  foreignKey: 'ownerId'});
 
-        schema.extendModel('User', {
-            settings:  { type: Schema.JSON },
-            extra:      Object
-        });
+    schema.extendModel('User', {
+        settings:  { type: Schema.JSON },
+        extra:      Object
+    });
 
-        var newuser = new User({settings: {hey: 'you'}});
-        test.ok(newuser.settings);
+    Post = schema.define('Post', {
+        title:     { type: String, length: 255, index: true },
+        subject:   { type: String },
+        content:   { type: Text },
+        date:      { type: Date,    default: function () { return new Date }, index: true },
+        published: { type: Boolean, default: false, index: true },
+        likes:     [],
+        related:   [RelatedPost]
+    }, {table: 'posts'});
 
-        Post = schema.define('Post', {
-            title:     { type: String, length: 255, index: true },
-            subject:   { type: String },
-            content:   { type: Text },
-            date:      { type: Date,    default: function () { return new Date }, index: true },
-            published: { type: Boolean, default: false, index: true },
-            likes:     [],
-            related:   [RelatedPost]
-        }, {table: 'posts'});
+    function RelatedPost() { }
+    RelatedPost.prototype.someMethod = function () {
+        return this.parent;
+    };
 
-        function RelatedPost() { }
-        RelatedPost.prototype.someMethod = function () {
-            return this.parent;
-        };
+    User.hasMany(Post,   {as: 'posts',  foreignKey: 'userId'});
+    // creates instance methods:
+    // user.posts(conds)
+    // user.posts.build(data) // like new Post({userId: user.id});
+    // user.posts.create(data) // build and save
+    // user.posts.find
+
+    // User.hasOne('latestPost', {model: Post, foreignKey: 'postId'});
+
+    // User.hasOne(Post,    {as: 'latestPost', foreignKey: 'latestPostId'});
+    // creates instance methods:
+    // user.latestPost()
+    // user.latestPost.build(data)
+    // user.latestPost.create(data)
+
+    Post.belongsTo(User, {as: 'author', foreignKey: 'userId'});
+    // creates instance methods:
+    // post.author(callback) -- getter when called with function
+    // post.author() -- sync getter when called without params
+    // post.author(user) -- setter when called with object
+
+    Passport = schema.define('Passport', {
+        number: String
+    });
+
+    Passport.belongsTo(User, {as: 'owner', foreignKey: 'ownerId'});
+    User.hasMany(Passport,   {as: 'passports', foreignKey: 'ownerId'});
+
+    it('should define class', function (test) {
 
         Post.validateAsync('title', function (err, done) {
             process.nextTick(done);
         });
 
-        User.hasMany(Post,   {as: 'posts',  foreignKey: 'userId'});
-        // creates instance methods:
-        // user.posts(conds)
-        // user.posts.build(data) // like new Post({userId: user.id});
-        // user.posts.create(data) // build and save
-        // user.posts.find
-
-        // User.hasOne('latestPost', {model: Post, foreignKey: 'postId'});
-
-        // User.hasOne(Post,    {as: 'latestPost', foreignKey: 'latestPostId'});
-        // creates instance methods:
-        // user.latestPost()
-        // user.latestPost.build(data)
-        // user.latestPost.create(data)
-
-        Post.belongsTo(User, {as: 'author', foreignKey: 'userId'});
-        // creates instance methods:
-        // post.author(callback) -- getter when called with function
-        // post.author() -- sync getter when called without params
-        // post.author(user) -- setter when called with object
-
-        Passport = schema.define('Passport', {
-            number: String
-        });
-
-        Passport.belongsTo(User, {as: 'owner', foreignKey: 'ownerId'});
-        User.hasMany(Passport,   {as: 'passports', foreignKey: 'ownerId'});
+        var newuser = new User({settings: {hey: 'you'}});
+        test.ok(newuser.settings);
 
         var user = new User;
 
