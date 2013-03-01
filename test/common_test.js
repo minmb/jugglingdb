@@ -1387,8 +1387,7 @@ function testOrm(schema) {
                 }
                 test.equal(newData.title, post.toObject().title);
                 test.equal(newData.content, post.toObject().content);
-                Post.updateOrCreate({id: 100001, title: 'hey'}, function (err, post) {
-                    if (schema.name !== 'mongodb') test.equal(post.id, 100001);
+                Post.updateOrCreate({id: 1, title: 'hey'}, function (err, post) {
                     test.equal(post.title, 'hey');
                     Post.find(post.id, function (err, post) {
                         if (!post) throw Error('No post!');
