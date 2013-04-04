@@ -1,7 +1,7 @@
 var db = getSchema(), slave = getSchema(), Model, SlaveModel;
 var should = require('should');
 
-describe.only('schema', function() {
+describe.skip('schema', function() {
 
     it('should define Model', function() {
         Model = db.define('Model');
