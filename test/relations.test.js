@@ -1,5 +1,6 @@
 // This test written in mocha+should.js
-var should = require('./init.js');
+var should = require('./init.js'),
+    _ = require('underscore');
 
 var db, Book, Chapter, Author, Reader;
 
@@ -244,6 +245,177 @@ describe('relations', function() {
                         });
                     });
                 });
+            });
+        });
+
+    });
+
+    describe('embedsOne', function() {
+
+        it('can be used to query data synchronously', function() {
+
+            Book.embedsOne(Author);
+
+            var book = new Book();
+            book.__data['author'] = {id: 1, name: 'A. A. Milne'};
+
+            book.author().should.be.an.instanceOf(Author);
+            book.author().id.should.equal(1);
+
+        });
+
+        it('can be used to query data asynchronously', function(done) {
+
+            Book.embedsOne(Author);
+
+            var book = new Book();
+            book.__data['author'] = {id: 1, name: 'A. A. Milne'};
+
+            book.author(function(err, author) {
+                author.should.be.an.instanceOf(Author);
+                author.id.should.equal(1);
+                done();
+            });
+        });
+
+        it('can be used to set data with a model instance', function() {
+
+            Book.embedsOne(Author);
+
+            var book = new Book;
+
+            book.author(new Author({id: 1, name: 'A. A. Milne'}));
+
+            book.author().should.be.an.instanceOf(Author);
+            book.author().id.should.equal(1);
+        });
+
+        it('can be used to set data with a plain object', function() {
+
+            Book.embedsOne(Author);
+
+            var book = new Book;
+
+            book.author({id: 1, name: 'A. A. Milne'});
+
+            book.author().should.be.an.instanceOf(Author);
+            book.author().id.should.equal(1);
+        });
+
+        it('should not exist if nothing is there', function() {
+
+            Book.embedsOne(Author);
+
+            var book = new Book;
+
+            should.not.exist(book.author());
+
+        });
+
+    });
+
+    describe('embedsMany', function() {
+        
+        it('should fetch all scoped instances', function(done) {
+
+            Book.embedsMany(Chapter);
+
+            var book = new Book({id: 1, name: 'Winnie-the-Pooh'});
+            book.__data['chapters'] = [
+                {
+                    id: 1,
+                    name: 'In Which We Are Introduced to Winnie-the-Pooh and Some Bees and the Stories Begin'
+                },
+                {
+                    id: 2,
+                    name: 'In Which Pooh Goes Visiting and Gets Into a Tight Place'
+                },
+                {
+                    id: 3,
+                    name: 'In Which Pooh and Piglet Go Hunting and Nearly Catch a Woozle'
+                }
+            ];
+
+            book.chapters(function(err, chapters) {
+
+                _.pluck(chapters, 'id').should.eql([1, 2, 3]);
+                done();
+            });
+
+        });
+
+        it('should fetch all scoped instances with sorting', function(done) {
+
+            Book.embedsMany(Chapter);
+
+            var book = new Book({id: 1, name: 'Winnie-the-Pooh'});
+            book.__data['chapters'] = [
+                {
+                    id: 1,
+                    name: 'In Which We Are Introduced to Winnie-the-Pooh and Some Bees and the Stories Begin'
+                },
+                {
+                    id: 2,
+                    name: 'In Which Pooh Goes Visiting and Gets Into a Tight Place'
+                },
+                {
+                    id: 3,
+                    name: 'In Which Pooh and Piglet Go Hunting and Nearly Catch a Woozle'
+                }
+            ];
+
+            book.chapters({order: 'id DESC'}, function(err, chapters) {
+
+                _.pluck(chapters, 'id').should.eql([3, 2, 1]);
+                done();
+            });
+
+        });
+
+        it('should build record on scope', function(done) {
+            Book.create(function(err, book) {
+                var c = book.chapters.build();
+                c.bookId.should.equal(book.id);
+                c.save(done);
+            });
+        });
+
+        it('should create record on scope', function(done) {
+            Book.create(function(err, book) {
+                book.chapters.create(function(err, c) {
+                    should.not.exist(err);
+                    should.exist(c);
+                    c.bookId.should.equal(book.id);
+                    done();
+                });
+            });
+        });
+
+        it('should find scoped record', function(done) {
+
+            Book.embedsMany(Chapter);
+
+            var book = new Book({id: 1, name: 'Winnie-the-Pooh'});
+            book.__data['chapters'] = [
+                {
+                    id: 1,
+                    name: 'In Which We Are Introduced to Winnie-the-Pooh and Some Bees and the Stories Begin'
+                },
+                {
+                    id: 2,
+                    name: 'In Which Pooh Goes Visiting and Gets Into a Tight Place'
+                },
+                {
+                    id: 3,
+                    name: 'In Which Pooh and Piglet Go Hunting and Nearly Catch a Woozle'
+                }
+            ];
+
+            book.chapters.find(1, function(err, ch) {
+                should.not.exist(err);
+                should.exist(ch);
+                ch.id.should.equal(1);
+                done();
             });
         });
 
